@@ -45,6 +45,9 @@ namespace RegistroHexagonal.Application.UseCases
             if (clienteExistente is null)
                 throw new NotFoundException($"No se encontró ningún cliente con el id {id} para actualizar.");
 
+            if (documento != clienteExistente.Documento && _repositorio.ExisteDocumento(documento))
+                throw new BusinessRuleException($"Ya existe otro cliente con el documento {documento}.");
+
             clienteExistente.Actualizar(nombre, documento, email, telefono);
             var actualizado = _repositorio.Actualizar(clienteExistente);
 

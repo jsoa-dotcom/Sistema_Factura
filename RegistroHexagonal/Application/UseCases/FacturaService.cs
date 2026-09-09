@@ -25,7 +25,7 @@ namespace RegistroHexagonal.Application.UseCases
         }
 
         public Factura CrearFactura(string documentoCliente, decimal descuento,
-        List<(Guid ProductoId, int Cantidad, decimal Descuento)> lineas)
+         List<(Guid ProductoId, int Cantidad, decimal Descuento)> lineas)
         {
             var cliente = _clienteRepositorio.ObtenerPorDocumento(documentoCliente);
 
@@ -36,6 +36,8 @@ namespace RegistroHexagonal.Application.UseCases
                 throw new BusinessRuleException("La factura debe tener al menos una línea de producto.");
 
             const int maxIntentos = 5;
+            NumeroFacturaDuplicadoException? ultimaExcepcion = null;
+
             for (int intento = 1; intento <= maxIntentos; intento++)
             {
                 var numeroFactura = GenerarSiguienteNumeroFactura();
@@ -75,14 +77,16 @@ namespace RegistroHexagonal.Application.UseCases
 
                     return creada;
                 }
-                catch (NumeroFacturaDuplicadoException) when (intento < maxIntentos)
+                catch (NumeroFacturaDuplicadoException ex)
                 {
+                    ultimaExcepcion = ex;
                     _logger.LogWarning("Colisión de número de factura ({Numero}), reintentando ({Intento}/{Max})...",
                         numeroFactura, intento, maxIntentos);
                 }
             }
 
-            throw new InvalidOperationException("No se pudo generar un número de factura único tras varios intentos.");
+            throw new InvalidOperationException(
+                "No se pudo generar un número de factura único tras varios intentos.", ultimaExcepcion);
         }
 
         private string GenerarSiguienteNumeroFactura()
